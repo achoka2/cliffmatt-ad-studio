@@ -64,7 +64,7 @@ function drawKitLogo() { const c = $('#kLogo'), x = ctx2(c); x.clearRect(0, 0, c
 function kitChanged() { const b = brand(); for (const [id, k] of Object.entries(KF)) b[k] = $('#' + id).value; badgeCache.clear(); fillBrandSelect(); persist(); drawKitLogo(); syncAutoFields(); renderCopy(); invalidate(true); }
 
 function syncAutoFields() {
-  for (const k of ['headline', 'sub', 'cta', 'tag', 'price', 'offer']) { const el = $('#' + k); if (S.auto[k]) { el.value = ''; el.placeholder = autoText(k); } }
+  for (const k of ['headline', 'sub', 'cta', 'tag', 'price', 'offer', 'kicker']) { const el = $('#' + k); if (S.auto[k]) { el.value = ''; el.placeholder = autoText(k); } }
 }
 
 /* =========================================================================

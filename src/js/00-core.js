@@ -241,6 +241,27 @@ const GL = (() => {
     x.textAlign = 'right'; x.fillText(author, H * .94, 0);
     x.restore(); return c;
   }
+  function pageFaceCanvas() {
+    const c = mk(256, 360), x = ctx2(c); x.fillStyle = '#f7f5f0'; x.fillRect(0, 0, 256, 360);
+    const rnd = seeded(3); x.fillStyle = 'rgba(70,64,56,.13)';
+    for (let y = 40; y < 320; y += 11) { const w = 150 + rnd() * 50; x.fillRect(32, y, y % 77 < 11 ? w * .6 : w, 3); }
+    const g = x.createLinearGradient(0, 0, 256, 0); g.addColorStop(0, 'rgba(0,0,0,.1)'); g.addColorStop(.12, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, 256, 360);
+    return c;
+  }
+  function backCoverCanvas(spec) {
+    const w = 700, h = Math.round(700 * spec.cover.height / spec.cover.width), c = mk(w, h), x = ctx2(c);
+    const sm = mk(14, Math.max(4, Math.round(14 * h / w))); ctx2(sm).drawImage(spec.cover, 0, 0, sm.width, sm.height); // colour wash, no readable mirrored text
+    x.imageSmoothingQuality = 'high'; x.drawImage(sm, 0, 0, w, h);
+    x.fillStyle = rgba(hexToRgb(spec.backColor), .72); x.fillRect(0, 0, w, h);
+    const ink = lum(hexToRgb(spec.backColor)) > .45 ? 'rgba(20,20,20,' : 'rgba(250,246,238,';
+    x.fillStyle = ink + '.95)'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    let fs = w * .08; x.font = `400 ${fs}px ${FONT.serif}`; const lines = wrapText(x, spec.title || '', w * .76).slice(0, 3);
+    lines.forEach((l, i) => x.fillText(l, w / 2, h * .16 + i * fs * 1.15));
+    const rnd = seeded(8); x.fillStyle = ink + '.32)';
+    for (let i = 0; i < 11; i++) { const lw = w * (.55 + rnd() * .2) * (i % 4 === 3 ? .6 : 1); rr(x, (w - lw) / 2, h * .38 + i * h * .028, lw, h * .011, h * .005); x.fill(); }
+    if (spec.author) { x.fillStyle = ink + '.9)'; x.font = `700 ${w * .035}px ${FONT.mont}`; x.fillText(spec.author.toUpperCase(), w / 2, h * .82); }
+    return c;
+  }
   function hingeCover(src) {
     const c = mk(src.width, src.height), x = ctx2(c); x.drawImage(src, 0, 0); const w = c.width, h = c.height, hx = w * .045, l = Math.max(1, w * .003);
     const g = x.createLinearGradient(0, 0, hx * 1.5, 0); g.addColorStop(0, 'rgba(0,0,0,.22)'); g.addColorStop(.6, 'rgba(0,0,0,.05)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, hx * 1.5, h);
@@ -269,21 +290,42 @@ const GL = (() => {
     const mesh = (g, m) => { const ms = new THREE.Mesh(g, m); ms.castShadow = true; return ms; };
     const ar = spec.cover.width / spec.cover.height;
     let H = 2, W = H * ar, T = H * spec.thick, front = T / 2;
-    if (spec.type === 'hardcover' || spec.type === 'paperback' || spec.type === 'flat') {
+    if (spec.type === 'hardcover' || spec.type === 'paperback' || spec.type === 'flat' || spec.type === 'openbook') {
       const coverMat = mat({ map: tex(spec.type === 'hardcover' ? hingeCover(spec.cover) : spec.cover), roughness: .5 });
       const backMat = mat({ color: col(spec.backColor), roughness: .6 });
       const pV = mat({ map: tex(pagesCanvas(true)), roughness: .95 }), pH = mat({ map: tex(pagesCanvas(false)), roughness: .95 });
-      if (spec.type === 'hardcover') {
-        const b = .028, o = .03, sp = .02, edgeMat = mat({ color: col(spec.edgeColor), roughness: .7 });
-        const fb = mesh(geo(new THREE.BoxGeometry(W, H, b)), [edgeMat, edgeMat, edgeMat, edgeMat, coverMat, edgeMat]); fb.position.z = T / 2 - b / 2;
-        const bb = mesh(geo(new THREE.BoxGeometry(W, H, b)), [edgeMat, edgeMat, edgeMat, edgeMat, edgeMat, backMat]); bb.position.z = -T / 2 + b / 2;
-        const pages = mesh(geo(new THREE.BoxGeometry(W - o - sp, H - 2 * o, T - 2 * b)), [pV, pV, pH, pH, pV, pV]); pages.position.x = (sp - o) / 2;
-        const spineMat = mat({ map: tex(spineCanvas(spec, T * 1.15 / H)), roughness: .55 });
-        const sp3 = mesh(geo(new THREE.CylinderGeometry(T / 2, T / 2, H, 32, 1, false, Math.PI, Math.PI)), [spineMat, edgeMat, edgeMat]); sp3.scale.x = .3; sp3.position.x = -W / 2;
-        root.add(fb, bb, pages, sp3);
-      } else if (spec.type === 'paperback') {
-        const spineMat = mat({ map: tex(spineCanvas(spec, T / H)), roughness: .55 });
-        root.add(mesh(geo(new THREE.BoxGeometry(W, H, T)), [pV, spineMat, pH, pH, coverMat, backMat]));
+      if (spec.type === 'hardcover' || spec.type === 'paperback') {
+        const hard = spec.type === 'hardcover', b = hard ? .028 : .01, o = hard ? .03 : .004, sp = hard ? .02 : .006;
+        const edgeMat = hard ? mat({ color: col(spec.edgeColor), roughness: .7 }) : mat({ color: col(spec.spineColor), roughness: .6 });
+        const inside = mat({ color: col(hard ? '#efe8dc' : '#f7f6f2'), roughness: .9 }), pFace = mat({ map: tex(pageFaceCanvas()), roughness: .95 });
+        const pivot = new THREE.Group(); pivot.name = 'frontPivot'; pivot.position.set(-W / 2, 0, T / 2 - b / 2);
+        const fb = mesh(geo(new THREE.BoxGeometry(W, H, b)), [edgeMat, edgeMat, edgeMat, edgeMat, coverMat, inside]); fb.position.x = W / 2; pivot.add(fb);
+        const bb = mesh(geo(new THREE.BoxGeometry(W, H, b)), [edgeMat, edgeMat, edgeMat, edgeMat, inside, backMat]); bb.position.z = -T / 2 + b / 2;
+        const pages = mesh(geo(new THREE.BoxGeometry(W - o - sp, H - 2 * o, T - 2 * b)), [pV, pV, pH, pH, pFace, pFace]); pages.position.x = (sp - o) / 2;
+        const spineMat = mat({ map: tex(spineCanvas(spec, hard ? T * 1.15 / H : T / H)), roughness: .55 });
+        let spn;
+        if (hard) { spn = mesh(geo(new THREE.CylinderGeometry(T / 2, T / 2, H, 32, 1, false, Math.PI, Math.PI)), [spineMat, edgeMat, edgeMat]); spn.scale.x = .3; spn.position.x = -W / 2; }
+        else { spn = mesh(geo(new THREE.BoxGeometry(b, H, T)), [edgeMat, spineMat, edgeMat, edgeMat, edgeMat, edgeMat]); spn.position.x = -W / 2 + b / 2 - .002; }
+        root.add(pivot, bb, pages, spn);
+        root.userData.pivot = true;
+      } else if (spec.type === 'openbook') {
+        const b = .03, swing = rad(24), edge = mat({ color: col(spec.edgeColor), roughness: .7 }), inside = mat({ color: col('#efe8dc'), roughness: .9 });
+        const backArt = mat({ map: tex(backCoverCanvas(spec)), roughness: .55 }), spineMat = mat({ map: tex(spineCanvas(spec, T / H)), roughness: .55 });
+        const spn = mesh(geo(new THREE.BoxGeometry(T, H, b)), [edge, edge, edge, edge, spineMat, edge]);
+        const fp = new THREE.Group(); fp.position.x = T / 2; fp.rotation.y = swing;
+        const fb = mesh(geo(new THREE.BoxGeometry(W, H, b)), [edge, edge, edge, edge, coverMat, inside]); fb.position.x = W / 2; fp.add(fb);
+        const bp = new THREE.Group(); bp.position.x = -T / 2; bp.rotation.y = -swing;
+        const bk = mesh(geo(new THREE.BoxGeometry(W, H, b)), [edge, edge, edge, edge, backArt, inside]); bk.position.x = -W / 2; bp.add(bk);
+        const pg = geo(new THREE.PlaneGeometry(W * .95, H * .97)); pg.translate(W * .475, 0, 0);
+        const pm = mat({ map: tex(pageFaceCanvas()), side: THREE.DoubleSide, roughness: .92 });
+        const N = 44;
+        for (let i = 0; i < N; i++) {
+          const t = i / (N - 1), u = Math.sign(t - .5) * Math.pow(Math.abs(2 * t - 1), .55);
+          const ph = rad(90 - u * 70), pmh = mesh(pg, pm); pmh.position.set(0, 0, -b * .6); pmh.rotation.y = ph; root.add(pmh);
+        }
+        root.add(spn, fp, bp);
+        W = W * 2 + T; T = W * .5;
+        spec._noSheen = true;
       } else {
         T = H * .012; front = T / 2; const e = mat({ color: col('#f3f1ec'), roughness: .8 });
         root.add(mesh(geo(new THREE.BoxGeometry(W, H, T)), [e, e, e, e, coverMat, backMat]));
@@ -307,9 +349,13 @@ const GL = (() => {
       root.add(mesh(g, [screen, body]));
       g.computeBoundingBox(); front = g.boundingBox.max.z; T = g.boundingBox.max.z - g.boundingBox.min.z;
     }
-    const sg = geo(new THREE.PlaneGeometry(W, H));
     const sheenMat = new THREE.MeshBasicMaterial({ map: tex(sheenCanvas()), transparent: true, opacity: .3, depthWrite: false, blending: THREE.AdditiveBlending }); disp.push(sheenMat);
-    const sheen = new THREE.Mesh(sg, sheenMat); sheen.position.z = front + .004; root.add(sheen);
+    if (!spec._noSheen) {
+      const sg = geo(new THREE.PlaneGeometry(spec.type === 'phone' ? W : H * ar, H)), sheen = new THREE.Mesh(sg, sheenMat);
+      const pv = root.getObjectByName('frontPivot');
+      if (pv) { sheen.position.set(H * ar / 2, 0, (spec.type === 'hardcover' ? .028 : .01) / 2 + .004); pv.add(sheen); }
+      else { sheen.position.z = front + .004; root.add(sheen); }
+    }
     slots[slot] = { key, root, disp, mats, sheenMat, clones: [], dims: { W, H, T } };
     return true;
   }
@@ -340,6 +386,7 @@ const GL = (() => {
       const { H, T } = s.dims;
       if (it.pose === 'lie') { inst.rotation.set(-Math.PI / 2, rad(it.yaw || 0), 0, 'YXZ'); inst.position.set(it.x || 0, T / 2 + (it.y || 0), it.z || 0); }
       else { inst.rotation.set(rad(it.lean || 0), rad(it.yaw || 0), 0, 'YXZ'); inst.position.set(it.x || 0, H / 2 + (it.y || 0), it.z || 0); }
+      const pv = inst.getObjectByName('frontPivot'); if (pv) pv.rotation.y = -rad(it.open || 0);
       stage.add(inst);
     }
     if (!stage.children.length) return null;

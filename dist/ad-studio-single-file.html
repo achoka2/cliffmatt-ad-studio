@@ -511,6 +511,7 @@ body:not([data-mode="make"]) #toast{bottom:calc(18px + env(safe-area-inset-botto
           <div class="acc-body">
             <label class="f">Headline<input id="headline" type="text"></label>
             <label class="f">Second line<input id="sub" type="text"></label>
+            <label class="f">Small label <span class="hint">above the headline in some designs</span><input id="kicker" type="text"></label>
             <div class="two">
               <label class="f">Button<input id="cta" type="text"></label>
               <label class="f">Corner tag<input id="tag" type="text"></label>
@@ -535,6 +536,7 @@ body:not([data-mode="make"]) #toast{bottom:calc(18px + env(safe-area-inset-botto
               <label class="tg"><input type="checkbox" data-show="sub" checked>Second line</label>
               <label class="tg"><input type="checkbox" data-show="cta" checked>Button</label>
               <label class="tg"><input type="checkbox" data-show="tag" checked>Corner tag</label>
+              <label class="tg"><input type="checkbox" data-show="kicker" checked>Small label</label>
               <label class="tg"><input type="checkbox" data-show="logo" checked>Logo</label>
               <label class="tg"><input type="checkbox" data-show="price" checked>Price</label>
               <label class="tg"><input type="checkbox" data-show="site" checked>Website</label>
@@ -981,6 +983,27 @@ const GL = (() => {
     x.textAlign = 'right'; x.fillText(author, H * .94, 0);
     x.restore(); return c;
   }
+  function pageFaceCanvas() {
+    const c = mk(256, 360), x = ctx2(c); x.fillStyle = '#f7f5f0'; x.fillRect(0, 0, 256, 360);
+    const rnd = seeded(3); x.fillStyle = 'rgba(70,64,56,.13)';
+    for (let y = 40; y < 320; y += 11) { const w = 150 + rnd() * 50; x.fillRect(32, y, y % 77 < 11 ? w * .6 : w, 3); }
+    const g = x.createLinearGradient(0, 0, 256, 0); g.addColorStop(0, 'rgba(0,0,0,.1)'); g.addColorStop(.12, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, 256, 360);
+    return c;
+  }
+  function backCoverCanvas(spec) {
+    const w = 700, h = Math.round(700 * spec.cover.height / spec.cover.width), c = mk(w, h), x = ctx2(c);
+    const sm = mk(14, Math.max(4, Math.round(14 * h / w))); ctx2(sm).drawImage(spec.cover, 0, 0, sm.width, sm.height); // colour wash, no readable mirrored text
+    x.imageSmoothingQuality = 'high'; x.drawImage(sm, 0, 0, w, h);
+    x.fillStyle = rgba(hexToRgb(spec.backColor), .72); x.fillRect(0, 0, w, h);
+    const ink = lum(hexToRgb(spec.backColor)) > .45 ? 'rgba(20,20,20,' : 'rgba(250,246,238,';
+    x.fillStyle = ink + '.95)'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    let fs = w * .08; x.font = `400 ${fs}px ${FONT.serif}`; const lines = wrapText(x, spec.title || '', w * .76).slice(0, 3);
+    lines.forEach((l, i) => x.fillText(l, w / 2, h * .16 + i * fs * 1.15));
+    const rnd = seeded(8); x.fillStyle = ink + '.32)';
+    for (let i = 0; i < 11; i++) { const lw = w * (.55 + rnd() * .2) * (i % 4 === 3 ? .6 : 1); rr(x, (w - lw) / 2, h * .38 + i * h * .028, lw, h * .011, h * .005); x.fill(); }
+    if (spec.author) { x.fillStyle = ink + '.9)'; x.font = `700 ${w * .035}px ${FONT.mont}`; x.fillText(spec.author.toUpperCase(), w / 2, h * .82); }
+    return c;
+  }
   function hingeCover(src) {
     const c = mk(src.width, src.height), x = ctx2(c); x.drawImage(src, 0, 0); const w = c.width, h = c.height, hx = w * .045, l = Math.max(1, w * .003);
     const g = x.createLinearGradient(0, 0, hx * 1.5, 0); g.addColorStop(0, 'rgba(0,0,0,.22)'); g.addColorStop(.6, 'rgba(0,0,0,.05)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, hx * 1.5, h);
@@ -1009,21 +1032,42 @@ const GL = (() => {
     const mesh = (g, m) => { const ms = new THREE.Mesh(g, m); ms.castShadow = true; return ms; };
     const ar = spec.cover.width / spec.cover.height;
     let H = 2, W = H * ar, T = H * spec.thick, front = T / 2;
-    if (spec.type === 'hardcover' || spec.type === 'paperback' || spec.type === 'flat') {
+    if (spec.type === 'hardcover' || spec.type === 'paperback' || spec.type === 'flat' || spec.type === 'openbook') {
       const coverMat = mat({ map: tex(spec.type === 'hardcover' ? hingeCover(spec.cover) : spec.cover), roughness: .5 });
       const backMat = mat({ color: col(spec.backColor), roughness: .6 });
       const pV = mat({ map: tex(pagesCanvas(true)), roughness: .95 }), pH = mat({ map: tex(pagesCanvas(false)), roughness: .95 });
-      if (spec.type === 'hardcover') {
-        const b = .028, o = .03, sp = .02, edgeMat = mat({ color: col(spec.edgeColor), roughness: .7 });
-        const fb = mesh(geo(new THREE.BoxGeometry(W, H, b)), [edgeMat, edgeMat, edgeMat, edgeMat, coverMat, edgeMat]); fb.position.z = T / 2 - b / 2;
-        const bb = mesh(geo(new THREE.BoxGeometry(W, H, b)), [edgeMat, edgeMat, edgeMat, edgeMat, edgeMat, backMat]); bb.position.z = -T / 2 + b / 2;
-        const pages = mesh(geo(new THREE.BoxGeometry(W - o - sp, H - 2 * o, T - 2 * b)), [pV, pV, pH, pH, pV, pV]); pages.position.x = (sp - o) / 2;
-        const spineMat = mat({ map: tex(spineCanvas(spec, T * 1.15 / H)), roughness: .55 });
-        const sp3 = mesh(geo(new THREE.CylinderGeometry(T / 2, T / 2, H, 32, 1, false, Math.PI, Math.PI)), [spineMat, edgeMat, edgeMat]); sp3.scale.x = .3; sp3.position.x = -W / 2;
-        root.add(fb, bb, pages, sp3);
-      } else if (spec.type === 'paperback') {
-        const spineMat = mat({ map: tex(spineCanvas(spec, T / H)), roughness: .55 });
-        root.add(mesh(geo(new THREE.BoxGeometry(W, H, T)), [pV, spineMat, pH, pH, coverMat, backMat]));
+      if (spec.type === 'hardcover' || spec.type === 'paperback') {
+        const hard = spec.type === 'hardcover', b = hard ? .028 : .01, o = hard ? .03 : .004, sp = hard ? .02 : .006;
+        const edgeMat = hard ? mat({ color: col(spec.edgeColor), roughness: .7 }) : mat({ color: col(spec.spineColor), roughness: .6 });
+        const inside = mat({ color: col(hard ? '#efe8dc' : '#f7f6f2'), roughness: .9 }), pFace = mat({ map: tex(pageFaceCanvas()), roughness: .95 });
+        const pivot = new THREE.Group(); pivot.name = 'frontPivot'; pivot.position.set(-W / 2, 0, T / 2 - b / 2);
+        const fb = mesh(geo(new THREE.BoxGeometry(W, H, b)), [edgeMat, edgeMat, edgeMat, edgeMat, coverMat, inside]); fb.position.x = W / 2; pivot.add(fb);
+        const bb = mesh(geo(new THREE.BoxGeometry(W, H, b)), [edgeMat, edgeMat, edgeMat, edgeMat, inside, backMat]); bb.position.z = -T / 2 + b / 2;
+        const pages = mesh(geo(new THREE.BoxGeometry(W - o - sp, H - 2 * o, T - 2 * b)), [pV, pV, pH, pH, pFace, pFace]); pages.position.x = (sp - o) / 2;
+        const spineMat = mat({ map: tex(spineCanvas(spec, hard ? T * 1.15 / H : T / H)), roughness: .55 });
+        let spn;
+        if (hard) { spn = mesh(geo(new THREE.CylinderGeometry(T / 2, T / 2, H, 32, 1, false, Math.PI, Math.PI)), [spineMat, edgeMat, edgeMat]); spn.scale.x = .3; spn.position.x = -W / 2; }
+        else { spn = mesh(geo(new THREE.BoxGeometry(b, H, T)), [edgeMat, spineMat, edgeMat, edgeMat, edgeMat, edgeMat]); spn.position.x = -W / 2 + b / 2 - .002; }
+        root.add(pivot, bb, pages, spn);
+        root.userData.pivot = true;
+      } else if (spec.type === 'openbook') {
+        const b = .03, swing = rad(24), edge = mat({ color: col(spec.edgeColor), roughness: .7 }), inside = mat({ color: col('#efe8dc'), roughness: .9 });
+        const backArt = mat({ map: tex(backCoverCanvas(spec)), roughness: .55 }), spineMat = mat({ map: tex(spineCanvas(spec, T / H)), roughness: .55 });
+        const spn = mesh(geo(new THREE.BoxGeometry(T, H, b)), [edge, edge, edge, edge, spineMat, edge]);
+        const fp = new THREE.Group(); fp.position.x = T / 2; fp.rotation.y = swing;
+        const fb = mesh(geo(new THREE.BoxGeometry(W, H, b)), [edge, edge, edge, edge, coverMat, inside]); fb.position.x = W / 2; fp.add(fb);
+        const bp = new THREE.Group(); bp.position.x = -T / 2; bp.rotation.y = -swing;
+        const bk = mesh(geo(new THREE.BoxGeometry(W, H, b)), [edge, edge, edge, edge, backArt, inside]); bk.position.x = -W / 2; bp.add(bk);
+        const pg = geo(new THREE.PlaneGeometry(W * .95, H * .97)); pg.translate(W * .475, 0, 0);
+        const pm = mat({ map: tex(pageFaceCanvas()), side: THREE.DoubleSide, roughness: .92 });
+        const N = 44;
+        for (let i = 0; i < N; i++) {
+          const t = i / (N - 1), u = Math.sign(t - .5) * Math.pow(Math.abs(2 * t - 1), .55);
+          const ph = rad(90 - u * 70), pmh = mesh(pg, pm); pmh.position.set(0, 0, -b * .6); pmh.rotation.y = ph; root.add(pmh);
+        }
+        root.add(spn, fp, bp);
+        W = W * 2 + T; T = W * .5;
+        spec._noSheen = true;
       } else {
         T = H * .012; front = T / 2; const e = mat({ color: col('#f3f1ec'), roughness: .8 });
         root.add(mesh(geo(new THREE.BoxGeometry(W, H, T)), [e, e, e, e, coverMat, backMat]));
@@ -1047,9 +1091,13 @@ const GL = (() => {
       root.add(mesh(g, [screen, body]));
       g.computeBoundingBox(); front = g.boundingBox.max.z; T = g.boundingBox.max.z - g.boundingBox.min.z;
     }
-    const sg = geo(new THREE.PlaneGeometry(W, H));
     const sheenMat = new THREE.MeshBasicMaterial({ map: tex(sheenCanvas()), transparent: true, opacity: .3, depthWrite: false, blending: THREE.AdditiveBlending }); disp.push(sheenMat);
-    const sheen = new THREE.Mesh(sg, sheenMat); sheen.position.z = front + .004; root.add(sheen);
+    if (!spec._noSheen) {
+      const sg = geo(new THREE.PlaneGeometry(spec.type === 'phone' ? W : H * ar, H)), sheen = new THREE.Mesh(sg, sheenMat);
+      const pv = root.getObjectByName('frontPivot');
+      if (pv) { sheen.position.set(H * ar / 2, 0, (spec.type === 'hardcover' ? .028 : .01) / 2 + .004); pv.add(sheen); }
+      else { sheen.position.z = front + .004; root.add(sheen); }
+    }
     slots[slot] = { key, root, disp, mats, sheenMat, clones: [], dims: { W, H, T } };
     return true;
   }
@@ -1080,6 +1128,7 @@ const GL = (() => {
       const { H, T } = s.dims;
       if (it.pose === 'lie') { inst.rotation.set(-Math.PI / 2, rad(it.yaw || 0), 0, 'YXZ'); inst.position.set(it.x || 0, T / 2 + (it.y || 0), it.z || 0); }
       else { inst.rotation.set(rad(it.lean || 0), rad(it.yaw || 0), 0, 'YXZ'); inst.position.set(it.x || 0, H / 2 + (it.y || 0), it.z || 0); }
+      const pv = inst.getObjectByName('frontPivot'); if (pv) pv.rotation.y = -rad(it.open || 0);
       stage.add(inst);
     }
     if (!stage.children.length) return null;
@@ -1195,9 +1244,9 @@ const S = {
   brandId: saved.brandId || 'cliffmatt',
   cover: null, info: null, coverId: 0, isSample: true, coverBlobName: '',
   title: '', author: '',
-  text: { headline: '', sub: '', cta: '', tag: '', price: '', offer: '', oldPrice: '', quote: '', quoteBy: '' },
-  auto: { headline: true, sub: true, cta: true, tag: true, price: true, offer: true },
-  show: Object.assign({ headline: true, sub: true, cta: true, tag: true, logo: true, price: true, site: true, device: true, stars: false }, saved.show || {}),
+  text: { headline: '', sub: '', cta: '', tag: '', price: '', offer: '', kicker: '', oldPrice: '', quote: '', quoteBy: '' },
+  auto: { headline: true, sub: true, cta: true, tag: true, price: true, offer: true, kicker: true },
+  show: Object.assign({ headline: true, sub: true, cta: true, tag: true, kicker: true, logo: true, price: true, site: true, device: true, stars: false }, saved.show || {}),
   mock: Object.assign({}, MOCK_DEFAULT, saved.mock && saved.mock.v === 2 ? saved.mock : (saved.mock ? { type: saved.mock.type } : {})),
   extra: [],
   template: saved.template || 'shop',
@@ -1245,7 +1294,13 @@ const VARIANTS = {
   top: () => ({ items: [{ pose: 'lie', yaw: -9 }], elev: 90 }),
   lie: () => ({ items: [{ pose: 'lie', yaw: 26 }], elev: 42 }),
   stack: d => ({ items: [{ pose: 'lie', yaw: 10, x: d.W * .32 }, { pose: 'lie', yaw: -7, y: d.T, x: d.W * .32 }, { pose: 'lie', yaw: 15, y: d.T * 2, x: d.W * .36, z: -d.H * .02 }, { pose: 'stand', yaw: -18, x: -d.W * .62, z: d.H * .78 }], elev: 18 }),
-  pair: d => ({ items: [{ pose: 'stand', yaw: -16, x: -d.W * .55, z: -d.H * .05 }, { pose: 'lie', yaw: -28, x: d.W * .86, z: d.H * .42 }], elev: 15 })
+  pair: d => ({ items: [{ pose: 'stand', yaw: -16, x: -d.W * .55, z: -d.H * .05 }, { pose: 'lie', yaw: -28, x: d.W * .86, z: d.H * .42 }], elev: 15 }),
+  duoTop: d => ({ items: [{ pose: 'lie', yaw: 15, x: d.W * .2, z: -d.H * .06 }, { pose: 'lie', yaw: -3, y: d.T * 1.02, x: -d.W * .06, z: d.H * .04 }], elev: 90 }),
+  topA: () => ({ items: [{ pose: 'lie', yaw: 0 }], elev: 90 }),
+  topB: () => ({ items: [{ pose: 'lie', yaw: 34 }], elev: 90 }),
+  tilt: () => ({ items: [{ pose: 'lie', yaw: -14 }], elev: 60 }),
+  ajar: () => ({ items: [{ pose: 'stand', yaw: -24, open: 34 }], elev: 9 }),
+  open: () => ({ items: [{ pose: 'stand', yaw: 0 }], elev: 30 })
 };
 function renderProduct(spec, view, target = PROD, slot = 'book') {
   const x = ctx2(target);
@@ -1276,8 +1331,9 @@ function buildProduct() {
 const variantCache = new Map();
 function mainCtx() { return { cover: S.cover, info: S.info, title: S.title, author: S.author, coverId: S.coverId, slot: 'book', cache: variantCache }; }
 function getBookVariant(variant, c = mainCtx()) {
-  if (variant === 'collection') return collectionProduct(c);
-  const spec = mockSpec(c.cover, c.info, S.mock, c.title, c.author, c.coverId);
+  if (variant === 'collection' || variant === 'fan') return collectionProduct(c, variant);
+  if (variant === 'open') c = Object.assign({}, c, { slot: c.slot === 'book' ? 'openbook' : c.slot + '-open' });
+  const spec = mockSpec(c.cover, c.info, variant === 'open' ? Object.assign({}, S.mock, { type: 'openbook' }) : S.mock, c.title, c.author, c.coverId);
   const key = [variant, spec.type, spec.thick, spec.spineColor, c.coverId, S.mock.gloss, c.title, c.author].join('|');
   if (c.cache.has(key)) return c.cache.get(key);
   const t = mk(GL.SIZE, GL.SIZE); let prod;
@@ -1288,17 +1344,26 @@ function getBookVariant(variant, c = mainCtx()) {
   } else { renderProduct(spec, rotOf(S.mock), t, c.slot); prod = cropProduct(t, null); }
   if (c.cache.size > 40) c.cache.clear(); c.cache.set(key, prod); return prod;
 }
-function collectionProduct(c) {
+function collectionProduct(c, variant = 'collection') {
   const type = S.mock.type === 'phone' ? 'hardcover' : S.mock.type, m = Object.assign({}, S.mock, { type });
   const list = [{ cover: c.cover, info: c.info, title: c.title, author: c.author, coverId: c.coverId, slot: c.slot }]
     .concat(S.extra.map((e, i) => ({ cover: e.cover, info: e.info, title: e.title || '', author: '', coverId: 'x' + e.id, slot: 'x' + i })));
-  const key = ['collection', type, m.thick, m.gloss, ...list.map(l => l.coverId)].join('|');
+  // a fan needs at least three books: repeat the covers we have
+  if (variant === 'fan') { const base = list.slice(); for (let i = 0; list.length < 3; i++) list.push(base[i % base.length]); }
+  const key = [variant, type, m.thick, m.gloss, ...list.map(l => l.coverId + ':' + l.slot)].join('|');
   if (c.cache.has(key)) return c.cache.get(key);
   const t = mk(GL.SIZE, GL.SIZE); let prod;
   if (list.every(l => GL.build(l.slot, mockSpec(l.cover, l.info, m, l.title, l.author, l.coverId)))) {
-    const n = list.length, W = GL.dims(c.slot).W;
-    const items = list.map((l, i) => ({ slot: l.slot, pose: 'stand', yaw: -24, x: (i - (n - 1) / 2) * W * .74, z: -i * .34 }));
-    GL.renderScene(items, { elev: 7, roll: 0, gloss: m.gloss / 100 }, t); prod = cropProduct(t, GL.bare());
+    const n = list.length, d = GL.dims(c.slot), W = d.W;
+    if (variant === 'fan') {
+      // fanned like playing cards: each book rests on the one before it
+      const items = list.map((l, i) => { const k = n > 1 ? i / (n - 1) - .5 : 0; return { slot: l.slot, pose: 'lie', yaw: -k * 40, x: (i - (n - 1) / 2) * W * .6, y: i * d.T * 1.02, z: (.25 - k * k) * d.H * .12 }; });
+      GL.renderScene(items, { elev: 90, roll: 0, gloss: m.gloss / 100 }, t);
+    } else {
+      const items = list.map((l, i) => ({ slot: l.slot, pose: 'stand', yaw: -24, x: (i - (n - 1) / 2) * W * .74, z: -i * .34 }));
+      GL.renderScene(items, { elev: 7, roll: 0, gloss: m.gloss / 100 }, t);
+    }
+    prod = cropProduct(t, GL.bare());
   } else { renderProduct(mockSpec(c.cover, c.info, m, c.title, c.author, c.coverId), rotOf(m), t, c.slot); prod = cropProduct(t, null); }
   c.cache.set(key, prod); return prod;
 }
@@ -2139,9 +2204,9 @@ Object.assign(TPL, {
   }
 });
 
-const TPL_ORDER = ['shop', 'classic', 'promo', 'glow', 'offer', 'quote', 'steps', 'collection', 'spotlight', 'topview', 'desk', 'flatlay', 'stack', 'banner', 'instant', 'custom'];
+const TPL_ORDER = ['shop', 'classic', 'promo', 'glow', 'offer', 'wave', 'frame', 'quote', 'steps', 'collection', 'fan', 'spotlight', 'topview', 'duo', 'openbook', 'bigbanner', 'desk', 'flatlay', 'stack', 'banner', 'instant', 'custom'];
 const CAROUSEL = ['promo', 'glow', 'offer', 'spotlight', 'topview', 'desk', 'stack', 'banner', 'instant', 'steps'];
-const ORDER = ['chat', 'book', 'device', 'price', 'logo', 'offer', 'headline', 'sub', 'deal', 'quote', 'steps', 'cta', 'site', 'tag'];
+const ORDER = ['chat', 'book2', 'book', 'device', 'price', 'logo', 'offer', 'kicker', 'headline', 'sub', 'deal', 'quote', 'steps', 'cta', 'site', 'tag'];
 
 function overrideBg(ctx, L, D) {
   const { W, H } = L;
@@ -2195,9 +2260,10 @@ function autoText(key, title = S.title, author = S.author) {
   if (key === 'tag') return b.tag;
   if (key === 'price') return b.price;
   if (key === 'offer') return 'Special offer';
+  if (key === 'kicker') return 'Instant PDF e-book';
   return '';
 }
-function currentText() { const t = {}; for (const k of ['headline', 'sub', 'cta', 'tag', 'price', 'offer']) t[k] = S.auto[k] ? autoText(k) : S.text[k]; for (const k of ['oldPrice', 'quote', 'quoteBy']) t[k] = S.text[k]; return t; }
+function currentText() { const t = {}; for (const k of ['headline', 'sub', 'cta', 'tag', 'price', 'offer', 'kicker']) t[k] = S.auto[k] ? autoText(k) : S.text[k]; for (const k of ['oldPrice', 'quote', 'quoteBy']) t[k] = S.text[k]; return t; }
 function buildData(o = {}) {
   const b = brand();
   if (!('device' in o) && S.cover && S.show.device && TPL[o.template || S.template].usesDevice) buildDevice();
@@ -2217,8 +2283,10 @@ function buildData(o = {}) {
         { name, dark, bg(ctx, L, D), rects: { sq, pt, st, ls }, styles(D, th, L) }
         rects place elements as [x, y, w, h] fractions of the canvas for
         1:1 (sq), 4:5 (pt), 9:16 (st, keep 14% top / 20% bottom clear) and 1.91:1 (ls).
-        Elements: book (variant: main | top | lie | stack | pair | collection), device, chat,
-        logo, headline, sub, offer, deal, quote, steps, price, cta, site, tag.
+        Elements: book (variant: main | top | lie | stack | pair | collection | fan | duoTop |
+        topA | topB | tilt | ajar | open), book2 (a second book, same variants, not draggable),
+        device, chat, logo, kicker, headline, sub, offer, deal, quote, steps, price, cta, site, tag.
+        A rect may run past the edges (negative x/y or x+w > 1) to bleed a book off the canvas.
      2. Add its id to TPL_ORDER and a line to DESIGN_META below.
    ========================================================================= */
 const CATEGORIES = [
@@ -2246,8 +2314,243 @@ const DESIGN_META = {
   flatlay: ['scene', 'Top-down desk with coffee, leaves and a pen'],
   stack: ['scene', 'A standing book in front of a stack of copies'],
   banner: ['scene', 'Two books and a headline, magazine style'],
+  wave: ['promo', 'Two-tone wave, big white headline, cover opening'],
+  frame: ['promo', 'Outlined frame, tilted book, label, headline and button'],
+  fan: ['series', 'Books fanned out on a colourful geometric band'],
+  duo: ['scene', 'Two copies stacked, seen from above on grey'],
+  openbook: ['scene', 'The book standing open with its pages fanned'],
+  bigbanner: ['scene', 'Two big books running off the edges, bold circles'],
   custom: ['own', 'Your own background picture or colour']
 };
+
+
+/* =========================================================================
+   Mockup-style designs (ideas from popular book mockup sites, drawn from
+   scratch): two copies from above, big banner books, open book, fanned
+   series, two-tone wave and an outlined frame. Every one has a layout for
+   1:1, 4:5, 9:16 and 1.91:1.
+   ========================================================================= */
+
+// A second book in the same ad. It never follows the drag / position sliders.
+EL.book2 = function (ctx, L, D, rect, st, A) {
+  return EL.book(ctx, L, Object.assign({}, D, { track: null, pos: { scale: 1, x: 0, y: 0 } }), rect, Object.assign({ variant: 'topB' }, st), A);
+};
+// Small label above the headline: a pill, or spaced capitals with a short bar.
+EL.kicker = function (ctx, L, D, rect, st, A) {
+  const t = D.text.kicker; if (!D.show.kicker || !t) return;
+  const an = anim(A, 'kicker'); ctx.save(); ctx.globalAlpha *= an.a; ctx.translate(0, an.dy * .5);
+  if (st.style === 'pill') labelPill(ctx, t, rect, st);
+  else {
+    const label = String(t).toUpperCase(), h = rect.h, chars = [...label], sp = st.spacing ?? .16, fam = st.fam || FONT.mont, wt = st.wt || 800;
+    const bar = st.bar ? h * 1.5 : 0, gap = st.bar ? h * .45 : 0;
+    let fs = h * .78; const width = () => { ctx.font = `${wt} ${fs}px ${fam}`; return chars.reduce((a, c) => a + ctx.measureText(c).width, 0) + fs * sp * (chars.length - 1); };
+    let tw = width(); while (tw > rect.w - bar - gap && fs > 6) { fs *= .94; tw = width(); }
+    const total = bar + gap + tw, x0 = st.align === 'center' ? rect.x + (rect.w - total) / 2 : st.align === 'right' ? rect.x + rect.w - total : rect.x, cy = rect.y + h / 2;
+    ctx.fillStyle = st.color || '#111';
+    if (bar) { rr(ctx, x0, cy - h * .06, bar, h * .12, h * .06); ctx.fill(); }
+    ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; let x = x0 + bar + gap;
+    for (const c of chars) { ctx.fillText(c, x, cy + fs * .04); x += ctx.measureText(c).width + fs * sp; }
+  }
+  ctx.restore();
+};
+Object.assign(TIMELINE, { book2: [.25, 1.45], kicker: [.7, 1.3] });
+
+// ---------- background helpers ----------
+function studioBackdrop(ctx, W, H, P, floorY) {
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#ffffff'); g.addColorStop(floorY, hsl(P.h, .12, .93)); g.addColorStop(1, hsl(P.h, .14, .84)); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  const r = ctx.createRadialGradient(W / 2, H * floorY, 0, W / 2, H * floorY, Math.max(W, H) * .6); r.addColorStop(0, 'rgba(255,255,255,.85)'); r.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = r; ctx.fillRect(0, 0, W, H);
+}
+// Bauhaus-style tiles: quarter circles, half circles, dots, triangles and stripes.
+function geoTiles(ctx, x0, y0, w, h, rows, cols, colors, seed) {
+  const rnd = seeded(seed), tw = w / cols, th = h / rows, pick = () => colors[Math.floor(rnd() * colors.length)];
+  ctx.save(); ctx.beginPath(); ctx.rect(x0, y0, w, h); ctx.clip();
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const x = x0 + c * tw, y = y0 + r * th, bgc = pick(); let fg = pick(); while (fg === bgc) fg = pick();
+    ctx.fillStyle = bgc; ctx.fillRect(x - .5, y - .5, tw + 1, th + 1); ctx.fillStyle = fg;
+    const k = Math.floor(rnd() * 6), m = Math.min(tw, th);
+    ctx.beginPath();
+    if (k === 0) { const cx = rnd() > .5 ? x : x + tw, cy = rnd() > .5 ? y : y + th; ctx.moveTo(cx, cy); ctx.arc(cx, cy, m, 0, Math.PI * 2); }
+    else if (k === 1) { const a = Math.floor(rnd() * 4) * Math.PI / 2; ctx.save(); ctx.translate(x + tw / 2, y + th / 2); ctx.rotate(a); ctx.arc(0, th / 2, m / 2, Math.PI, 0); ctx.restore(); }
+    else if (k === 2) ctx.arc(x + tw / 2, y + th / 2, m * .34, 0, Math.PI * 2);
+    else if (k === 3) { if (rnd() > .5) { ctx.moveTo(x, y); ctx.lineTo(x + tw, y + th); ctx.lineTo(x, y + th); } else { ctx.moveTo(x + tw, y); ctx.lineTo(x + tw, y + th); ctx.lineTo(x, y + th); } }
+    else if (k === 4) { for (let i = 0; i < 4; i++) ctx.rect(x, y + th * (i / 4 + .06), tw, th * .11); }
+    else { ctx.arc(x + tw / 2, y + th / 2, m * .42, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = bgc; ctx.beginPath(); ctx.arc(x + tw / 2, y + th / 2, m * .2, 0, Math.PI * 2); }
+    ctx.fill();
+  }
+  ctx.restore();
+}
+function wavePath(ctx, W, H, a, b, amp) {
+  ctx.beginPath(); ctx.moveTo(0, H * a);
+  ctx.bezierCurveTo(W * .3, H * (a + amp), W * .62, H * (b - amp), W, H * b);
+  ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
+}
+
+Object.assign(TPL, {
+  duo: {
+    name: 'Two from above', dark: false,
+    bg(ctx, L, D) {
+      const P = palOf(D), { W, H } = L; ctx.fillStyle = hsl(P.h, .05, .84); ctx.fillRect(0, 0, W, H);
+      const g = ctx.createRadialGradient(W * .25, H * .15, 0, W * .25, H * .15, Math.max(W, H) * .9); g.addColorStop(0, 'rgba(255,255,255,.55)'); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      const rnd = seeded(5); ctx.fillStyle = 'rgba(0,0,0,.018)'; for (let i = 0; i < 2600; i++) ctx.fillRect(rnd() * W, rnd() * H, 2, 2);
+      const v = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .4, W / 2, H / 2, Math.max(W, H) * .8); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.14)'); ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+    },
+    rects: {
+      sq: { logo: [.05, .05, .12, .12], price: [.82, .05, .13, .13], book: [.12, .07, .76, .78], site: [.25, .875, .5, .075], tag: [.79, .86, .16, .1] },
+      pt: { logo: [.05, .04, .12, .096], price: [.82, .04, .13, .104], headline: [.2, .05, .6, .09], book: [.08, .16, .84, .68], site: [.25, .88, .5, .06], tag: [.79, .87, .16, .08] },
+      st: { logo: [.07, .145, .14, .078], price: [.78, .145, .15, .085], headline: [.1, .24, .8, .07], book: [.05, .32, .9, .38], tag: [.4, .7, .2, .035], site: [.2, .745, .6, .04] },
+      ls: { book: [.03, .04, .46, .92], logo: [.55, .08, .1, .19], headline: [.55, .32, .4, .26], site: [.55, .66, .29, .13], tag: [.86, .66, .1, .15], price: [.86, .06, .11, .21] }
+    },
+    styles(D, th, L) {
+      const b = D.brand; return {
+        book: { variant: 'duoTop', align: 'center' }, logo: { align: 'left' }, price: { shape: 'burst', fill: b.primary, ink: '#fff' },
+        headline: { fam: FONT.mont, wt: 800, color: th.dark ? '#fff' : b.dark, lines: 2, lh: 1.08, align: 'center', v: 'middle' },
+        site: { style: 'outline', color: b.siteColor, ink: '#0b0b0b', fill: '#fff', align: 'center' },
+        tag: { style: 'text', fam: FONT.mont, wt: 900, color: b.tagColor, align: L && L.k === 'st' ? 'center' : 'right' }
+      };
+    }
+  },
+  bigbanner: {
+    name: 'Book banner', dark: false,
+    bg(ctx, L, D) {
+      const P = palOf(D), b = D.brand, { W, H } = L, M = Math.max(W, H);
+      ctx.fillStyle = '#f6f1ea'; ctx.fillRect(0, 0, W, H);
+      const warm = '#f39a2e', c = { sq: [[.0, .05, .2, warm], [.92, .9, .26, b.primary], [.5, .78, .03, P.vivid]], pt: [[.0, .0, .14, warm], [.95, .6, .2, b.primary], [.42, .55, .025, P.vivid]], st: [[-.02, .1, .12, warm], [1, .55, .2, b.primary], [.82, .26, .025, P.vivid]], ls: [[.5, .0, .1, warm], [.5, 1.02, .08, b.primary], [.28, .82, .02, P.vivid]] }[L.k];
+      c.forEach(([x, y, r, col]) => { ctx.beginPath(); ctx.arc(x * W, y * H, r * M, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill(); });
+      ctx.strokeStyle = rgba(hexToRgb(b.dark), .12); ctx.lineWidth = M * .002; const s = M * .03;
+      for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.arc(W * (L.k === 'ls' ? .7 : .12), H * (L.k === 'ls' ? .12 : .9), s * (1 + i), 0, Math.PI * 2); ctx.stroke(); }
+    },
+    rects: {
+      sq: { logo: [.06, .06, .12, .12], kicker: [.06, .24, .4, .035], headline: [.06, .29, .39, .27], sub: [.06, .58, .37, .1], cta: [.06, .71, .36, .07], site: [.06, .875, .4, .065], book2: [.52, -.1, .6, .6], book: [.45, .34, .6, .74], price: [.36, .08, .13, .13] },
+      pt: { logo: [.06, .04, .12, .096], price: [.81, .04, .14, .112], kicker: [.06, .165, .6, .03], headline: [.06, .205, .88, .15], sub: [.06, .365, .7, .045], cta: [.06, .425, .38, .05], site: [.5, .425, .44, .05], book2: [-.18, .5, .66, .58], book: [.36, .5, .72, .6] },
+      st: { logo: [.07, .145, .15, .085], price: [.76, .145, .17, .095], kicker: [.07, .25, .7, .024], headline: [.07, .282, .86, .1], sub: [.07, .388, .86, .032], cta: [.07, .434, .52, .036], site: [.07, .48, .6, .03], book2: [-.22, .52, .7, .32], book: [.32, .5, .76, .33] },
+      ls: { book2: [-.1, -.16, .4, 1.04], book: [.71, .04, .36, 1.14], logo: [.455, .05, .09, .16], kicker: [.3, .25, .4, .055], headline: [.31, .32, .38, .25], sub: [.3, .59, .4, .08], cta: [.37, .71, .26, .12], site: [.37, .86, .26, .09], price: [.62, .05, .11, .22] }
+    },
+    styles(D, th, L) {
+      const b = D.brand, mid = L && L.k === 'ls' ? 'center' : 'left'; return {
+        book: { variant: 'topA', align: 'center' }, book2: { variant: 'topB', align: 'center' },
+        logo: { align: mid === 'center' ? 'center' : 'left' }, price: { shape: 'burst', fill: GOLD, ink: '#17120a' },
+        kicker: { style: 'text', bar: mid !== 'center', color: b.primary, align: mid },
+        headline: { fam: FONT.mont, wt: 900, upper: true, color: th.dark ? '#fff' : b.dark, accent: b.primary, lines: 3, lh: 1.02, align: mid, v: 'middle' },
+        sub: { fam: FONT.mont, wt: 500, color: th.soft, lines: 2, lh: 1.3, max: L && (L.k === 'sq' || L.k === 'ls') ? .42 : null, align: mid },
+        cta: { fill: b.dark, ink: '#fff', align: mid },
+        site: { style: 'outline', color: b.siteColor, ink: '#0b0b0b', fill: '#fff', align: mid }
+      };
+    }
+  },
+  openbook: {
+    name: 'Open book', dark: false,
+    floor: { sq: .78, pt: .78, st: .66, ls: .86 },
+    bg(ctx, L, D) { studioBackdrop(ctx, L.W, L.H, palOf(D), this.floor[L.k]); },
+    rects: {
+      sq: { logo: [.05, .05, .12, .12], price: [.82, .05, .13, .13], headline: [.19, .055, .62, .13], sub: [.2, .195, .6, .045], book: [.04, .26, .92, .58], site: [.07, .875, .5, .075], tag: [.66, .865, .28, .1] },
+      pt: { logo: [.05, .04, .12, .096], price: [.82, .04, .13, .104], headline: [.12, .16, .76, .13], sub: [.15, .3, .7, .04], book: [.03, .36, .94, .48], site: [.07, .885, .5, .06], tag: [.66, .875, .28, .08] },
+      st: { logo: [.07, .145, .14, .078], price: [.78, .145, .15, .085], headline: [.08, .24, .84, .1], sub: [.1, .345, .8, .03], book: [.03, .39, .94, .31], site: [.08, .735, .58, .045], tag: [.68, .728, .24, .058] },
+      ls: { book: [.02, .05, .55, .9], logo: [.6, .07, .09, .16], price: [.86, .05, .11, .2], headline: [.6, .27, .37, .3], sub: [.6, .58, .37, .08], site: [.6, .76, .25, .12], tag: [.86, .75, .11, .14] }
+    },
+    styles(D, th) {
+      const b = D.brand; return {
+        book: { variant: 'open', align: 'bottom' }, logo: { align: 'left' }, price: { shape: 'burst', fill: b.primary, ink: '#fff' },
+        headline: { fam: FONT.serif, wt: 400, color: th.dark ? '#fff' : b.dark, lines: 2, lh: 1.05, align: 'center', v: 'middle' },
+        sub: { fam: FONT.mont, wt: 600, color: th.soft, lines: 1, align: 'center' },
+        site: { style: 'outline', color: b.siteColor, ink: '#0b0b0b', fill: '#fff', align: 'left' },
+        tag: { style: 'serif', color: b.tagColor, align: 'right', fam: FONT.serif }
+      };
+    }
+  },
+  fan: {
+    name: 'Series fan', dark: false,
+    band: { sq: [0, .3, 1, .53], pt: [0, .3, 1, .52], st: [0, .41, 1, .28], ls: [0, 0, .6, 1] },
+    autoText: {
+      headline: D => D.count > 1 ? (D.author ? `The ${D.author} collection` : 'The complete collection') : (D.title || 'Your book title'),
+      sub: D => D.count > 1 ? `${D.count} books · instant PDF download` : (D.author ? `by ${D.author}` : 'Instant PDF download')
+    },
+    bg(ctx, L, D) {
+      const P = palOf(D), b = D.brand, { W, H } = L; ctx.fillStyle = '#f7f3ec'; ctx.fillRect(0, 0, W, H);
+      const [bx, by, bw, bh] = this.band[L.k], rows = L.k === 'ls' ? 4 : L.k === 'st' ? 3 : 3;
+      const tile = (bh * H) / rows, cols = Math.max(1, Math.round(bw * W / tile));
+      geoTiles(ctx, bx * W, by * H, bw * W, bh * H, rows, cols, [b.primary, b.dark, P.vivid, '#f39a2e', b.siteColor, '#f7f3ec'], 21);
+      ctx.fillStyle = 'rgba(247,243,236,.18)'; ctx.fillRect(bx * W, by * H, bw * W, bh * H);
+    },
+    rects: {
+      sq: { logo: [.05, .05, .12, .12], price: [.82, .05, .13, .13], headline: [.19, .05, .62, .14], sub: [.2, .2, .6, .045], book: [.03, .27, .94, .58], cta: [.06, .875, .43, .075], site: [.51, .875, .43, .075] },
+      pt: { logo: [.05, .04, .12, .096], price: [.82, .04, .13, .104], headline: [.19, .045, .62, .13], sub: [.15, .185, .7, .04], book: [.03, .26, .94, .6], cta: [.06, .88, .43, .062], site: [.51, .88, .43, .062] },
+      st: { logo: [.43, .145, .14, .075], headline: [.07, .23, .86, .11], sub: [.1, .345, .8, .03], book: [.03, .39, .94, .32], price: [.74, .62, .2, .11], cta: [.18, .72, .64, .042], site: [.2, .772, .6, .032] },
+      ls: { book: [.02, .06, .56, .88], logo: [.63, .06, .08, .15], price: [.86, .05, .11, .2], headline: [.63, .25, .34, .3], sub: [.63, .56, .34, .08], cta: [.63, .71, .3, .12], site: [.63, .86, .3, .1] }
+    },
+    styles(D, th) {
+      const b = D.brand; return {
+        book: { variant: 'fan', align: 'center' }, logo: { align: 'left' }, price: { shape: 'burst', fill: b.primary, ink: '#fff' },
+        headline: { fam: FONT.serif, wt: 400, color: th.dark ? '#fff' : b.dark, lines: 2, lh: 1.04, align: 'center', v: 'middle' },
+        sub: { fam: FONT.mont, wt: 600, color: th.soft, lines: 1, align: 'center' },
+        cta: { fill: b.primary, ink: '#fff' },
+        site: { style: 'outline', color: b.siteColor, ink: '#0b0b0b', fill: '#fff', align: 'center' }
+      };
+    }
+  },
+  wave: {
+    name: 'Wave', dark: true,
+    wave: { sq: [.76, .6], pt: [.66, .52], st: [.6, .53], ls: [1.02, .58] },
+    bg(ctx, L, D) {
+      const P = palOf(D), { W, H } = L, [a, b2] = this.wave[L.k];
+      const g = ctx.createLinearGradient(0, 0, W, H); g.addColorStop(0, hsl(P.h, P.s, .3)); g.addColorStop(1, hsl(P.h + 22, P.s, .44)); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      const r = ctx.createRadialGradient(W * .85, H * .1, 0, W * .85, H * .1, Math.max(W, H) * .6); r.addColorStop(0, 'rgba(255,255,255,.16)'); r.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = r; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = hsl(P.h + 10, P.s * .8, .62, .55); wavePath(ctx, W, H, a - .05, b2 - .07, .07); ctx.fill();
+      const lg = ctx.createLinearGradient(0, H * b2, 0, H); lg.addColorStop(0, hsl(P.h, .35, .95)); lg.addColorStop(1, hsl(P.h, .3, .86)); ctx.fillStyle = lg; wavePath(ctx, W, H, a, b2, .06); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.12)'; const s = Math.min(W, H) * .012;
+      for (let y = 0; y < 5; y++) for (let x = 0; x < 6; x++) { ctx.beginPath(); ctx.arc(W * .06 + x * s * 3, H * (L.k === 'ls' ? .9 : .03) + y * s * 3 + (L.k === 'ls' ? -s * 12 : 0), s * .45, 0, Math.PI * 2); ctx.fill(); }
+    },
+    rects: {
+      sq: { logo: [.05, .05, .12, .12], headline: [.05, .2, .48, .29], sub: [.05, .5, .44, .09], cta: [.05, .62, .38, .075], book: [.5, .1, .48, .79], price: [.36, .72, .15, .15], site: [.05, .875, .42, .07] },
+      pt: { logo: [.05, .04, .12, .096], headline: [.05, .15, .9, .17], sub: [.05, .335, .52, .07], cta: [.05, .425, .4, .055], book: [.44, .3, .54, .58], price: [.1, .66, .19, .152], site: [.05, .89, .42, .055] },
+      st: { logo: [.07, .145, .15, .085], headline: [.07, .245, .86, .12], sub: [.07, .37, .86, .036], cta: [.07, .418, .52, .04], book: [.26, .45, .68, .3], price: [.08, .56, .24, .135], site: [.15, .768, .7, .032] },
+      ls: { logo: [.03, .07, .08, .15], headline: [.03, .25, .5, .36], sub: [.03, .62, .48, .1], cta: [.03, .78, .23, .13], site: [.28, .78, .24, .13], book: [.56, .04, .38, .92], price: [.86, .05, .11, .2] }
+    },
+    styles(D, th) {
+      const b = D.brand, P = palOf(D); return {
+        book: { variant: 'ajar', align: 'bottom' }, logo: { align: 'left', shadow: true },
+        headline: { fam: FONT.mont, wt: 900, upper: true, color: th.ink, accent: th.dark ? GOLD : b.primary, lines: 3, lh: 1.0, v: 'middle', shadow: th.dark ? 'rgba(0,0,0,.25)' : null },
+        sub: { fam: FONT.mont, wt: 600, color: th.soft, lines: 2, lh: 1.25, max: .42 },
+        cta: { fill: th.dark ? '#ffffff' : b.dark, ink: th.dark ? P.deep : '#fff' },
+        price: { shape: 'burst', fill: GOLD, ink: '#17120a' },
+        site: { style: 'bar', fill: '#ffffff', ink: '#0d1424', icon: b.primary, align: 'center' }
+      };
+    }
+  },
+  frame: {
+    name: 'Framed', dark: false,
+    band: { sq: [0, .8, 1, .2], pt: [0, .825, 1, .175], st: [0, .69, 1, .31], ls: [.5, .72, .5, .28] },
+    bg(ctx, L, D) {
+      const P = palOf(D), b = D.brand, { W, H } = L, M = Math.min(W, H), m = M * .04, rad2 = M * .045;
+      ctx.fillStyle = hsl(P.h, .25, .965); ctx.fillRect(0, 0, W, H);
+      const [bx, by, bw, bh] = this.band[L.k];
+      ctx.save(); rr(ctx, m, m, W - 2 * m, H - 2 * m, rad2); ctx.clip();
+      ctx.fillStyle = b.siteColor; ctx.fillRect(bx * W, by * H, bw * W, bh * H);
+      ctx.fillStyle = rgba(hexToRgb(b.siteColor), .1); const s = M * .022;
+      for (let y = 0; y < 4; y++) for (let x = 0; x < 5; x++) { ctx.beginPath(); ctx.arc(W - m - M * .05 - x * s * 2, m + M * .05 + y * s * 2, s * .35, 0, Math.PI * 2); ctx.fill(); }
+      ctx.beginPath(); ctx.arc(m + M * .02, (by - .02) * H, M * .1, 0, Math.PI * 2); ctx.fillStyle = rgba(hexToRgb(b.primary), .12); ctx.fill();
+      ctx.restore();
+      rr(ctx, m, m, W - 2 * m, H - 2 * m, rad2); ctx.lineWidth = M * .008; ctx.strokeStyle = b.siteColor; ctx.stroke();
+    },
+    rects: {
+      sq: { logo: [.08, .08, .12, .12], price: [.43, .1, .14, .14], book: [.06, .15, .55, .62], kicker: [.6, .2, .31, .045], headline: [.6, .27, .31, .3], sub: [.6, .585, .31, .12], site: [.08, .845, .44, .075], cta: [.55, .845, .37, .075] },
+      pt: { logo: [.08, .065, .12, .096], price: [.78, .065, .14, .112], kicker: [.08, .18, .5, .03], headline: [.08, .22, .84, .13], sub: [.08, .355, .78, .04], book: [.06, .4, .88, .41], site: [.08, .86, .44, .06], cta: [.55, .86, .37, .06] },
+      st: { logo: [.08, .145, .14, .078], price: [.76, .145, .16, .09], kicker: [.08, .24, .6, .022], headline: [.08, .268, .84, .085], sub: [.08, .358, .84, .03], book: [.04, .395, .92, .285], site: [.15, .71, .7, .032], cta: [.2, .755, .6, .036] },
+      ls: { book: [.05, .1, .44, .8], logo: [.86, .1, .09, .17], price: [.37, .08, .12, .22], kicker: [.53, .12, .3, .06], headline: [.53, .2, .42, .3], sub: [.53, .51, .42, .14], site: [.6, .775, .3, .11] }
+    },
+    styles(D, th, L) {
+      const b = D.brand; return {
+        book: { variant: 'tilt', align: 'center' }, logo: { align: 'left' }, price: { shape: 'burst', fill: b.primary, ink: '#fff' },
+        kicker: { style: 'pill', fill: b.primary, ink: '#fff', align: 'left', radius: .5 },
+        headline: { fam: FONT.serif, wt: 400, color: th.dark ? '#fff' : b.dark, lines: 3, lh: 1.04, v: 'middle' },
+        sub: { fam: FONT.mont, wt: 500, color: th.soft, lines: 3, lh: 1.3, max: L && (L.k === 'sq' || L.k === 'ls') ? .34 : null },
+        site: { style: 'bar', fill: '#ffffff', ink: '#0d1424', icon: b.siteColor, align: 'center' },
+        cta: { fill: b.dark, ink: '#fff', align: 'center' }
+      };
+    }
+  }
+});
+
+// catalogue fields shown in step 3 (category + one-line description)
 TPL_ORDER.forEach(id => { const m = DESIGN_META[id] || ['own', '']; TPL[id].cat = m[0]; TPL[id].desc = m[1]; });
 
 /* =========================================================================
@@ -2576,11 +2879,12 @@ async function downloadVideo() {
   const bgC = mk(sz.w, sz.h); drawBackground(ctx2(bgC), L, D);
   const spec = mockSpec(S.cover, S.info, S.mock, S.title, S.author, S.coverId);
   const frameCv = mk(GL.SIZE, GL.SIZE), base = rotOf(S.mock), is3d = GL.ok;
-  const T0 = TPL[S.template], floating = ((T0.styles(D, themeFor(D, T0), L) || {}).book || {}).floor === false;
+  const T0 = TPL[S.template], bookSt = (T0.styles(D, themeFor(D, T0), L) || {}).book || {}, floating = bookSt.floor === false;
+  const turning = !bookSt.variant || bookSt.variant === 'main'; // scene designs use a fixed camera, so only the main book turns
   const c = mk(sz.w, sz.h), x = ctx2(c);
   const draw = t => {
     let fr = null;
-    if (is3d) {
+    if (is3d && turning) {
       const e = easeOut(clamp(t / 1.4, 0, 1)), sway = t > 2.6 ? Math.sin((t - 2.6) * 1.5) * 5 : 0;
       fr = renderProduct(spec, { pose: base.pose, turn: base.turn + (1 - e) * -55 + sway, tilt: base.tilt, spin: base.spin, gloss: base.gloss, shadow: !floating }, frameCv);
     }
@@ -2802,7 +3106,7 @@ function drawKitLogo() { const c = $('#kLogo'), x = ctx2(c); x.clearRect(0, 0, c
 function kitChanged() { const b = brand(); for (const [id, k] of Object.entries(KF)) b[k] = $('#' + id).value; badgeCache.clear(); fillBrandSelect(); persist(); drawKitLogo(); syncAutoFields(); renderCopy(); invalidate(true); }
 
 function syncAutoFields() {
-  for (const k of ['headline', 'sub', 'cta', 'tag', 'price', 'offer']) { const el = $('#' + k); if (S.auto[k]) { el.value = ''; el.placeholder = autoText(k); } }
+  for (const k of ['headline', 'sub', 'cta', 'tag', 'price', 'offer', 'kicker']) { const el = $('#' + k); if (S.auto[k]) { el.value = ''; el.placeholder = autoText(k); } }
 }
 
 /* =========================================================================
@@ -3026,11 +3330,11 @@ function init() {
   $('#curDesign').textContent = TPL[S.template].name;
 
   // step 4: words, show, background, position
-  ['headline', 'sub', 'cta', 'tag', 'offer'].forEach(k => $('#' + k).addEventListener('input', e => { S.text[k] = e.target.value; S.auto[k] = !e.target.value; invalidate(); }));
+  ['headline', 'sub', 'cta', 'tag', 'offer', 'kicker'].forEach(k => $('#' + k).addEventListener('input', e => { S.text[k] = e.target.value; S.auto[k] = !e.target.value; invalidate(); }));
   ['oldPrice', 'quote', 'quoteBy'].forEach(k => $('#' + k).addEventListener('input', e => { S.text[k] = e.target.value; renderCopy(); invalidate(); }));
   $('#stars').checked = !!S.show.stars; $('#stars').addEventListener('change', e => { S.show.stars = e.target.checked; persist(); invalidate(); });
   $$('[data-show]').forEach(cb => { cb.checked = !!S.show[cb.dataset.show]; cb.addEventListener('change', () => { S.show[cb.dataset.show] = cb.checked; persist(); invalidate(); }); });
-  $('#resetWords').addEventListener('click', () => { for (const k of ['headline', 'sub', 'cta', 'tag', 'price', 'offer']) { S.auto[k] = true; S.text[k] = ''; } ['oldPrice', 'quote', 'quoteBy'].forEach(k => { S.text[k] = ''; $('#' + k).value = ''; }); S.aiCopy = null; syncAutoFields(); $('#price').value = ''; renderCopy(); invalidate(); });
+  $('#resetWords').addEventListener('click', () => { for (const k of ['headline', 'sub', 'cta', 'tag', 'price', 'offer', 'kicker']) { S.auto[k] = true; S.text[k] = ''; } ['oldPrice', 'quote', 'quoteBy'].forEach(k => { S.text[k] = ''; $('#' + k).value = ''; }); S.aiCopy = null; syncAutoFields(); $('#price').value = ''; renderCopy(); invalidate(); });
   $$('#sizeSeg button').forEach(b => b.addEventListener('click', () => { S.size = b.dataset.s; persist(); invalidate(); }));
   $('#safeTg').checked = S.safe; $('#safeTg').addEventListener('change', e => { S.safe = e.target.checked; persist(); invalidate(); });
   $$('#bgSeg button').forEach(b => b.addEventListener('click', () => setBgMode(b.dataset.v)));

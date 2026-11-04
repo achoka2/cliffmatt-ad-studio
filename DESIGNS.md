@@ -1,6 +1,6 @@
 # Adding a design
 
-Designs live in `src/js/40-designs.js` in the `TPL` object. Each design is:
+Designs live in the `TPL` object: `src/js/40-designs.js` holds the originals and `src/js/41-mockup-designs.js` the mockup-style ones (a new file works too: `Object.assign(TPL, { ... })` in a file numbered 41–49). Each design is:
 
 ```js
 mydesign: {
@@ -14,7 +14,11 @@ mydesign: {
 }
 ```
 
-Elements you can place: `book` (with `variant`: `main`, `top`, `lie`, `stack`, `pair`, `collection`), `device` (phone), `chat`, `logo`, `headline`, `sub`, `offer`, `deal`, `quote`, `steps`, `price`, `cta`, `site`, `tag`.
+Elements you can place: `book` (with `variant`: `main`, `top`, `lie`, `stack`, `pair`, `collection`, `fan`, `duoTop`, `topA`, `topB`, `tilt`, `ajar`, `open`), `book2` (a second book with its own variant; it does not follow the drag), `device` (phone), `chat`, `logo`, `kicker` (small label above the headline: `style: 'pill'` or spaced capitals with `bar: true`), `headline`, `sub`, `offer`, `deal`, `quote`, `steps`, `price`, `cta`, `site`, `tag`.
+
+A rect may run past the canvas (negative `x`/`y`, or `x + w > 1`) to bleed a book off the edge, as in *Book banner*.
+
+New camera set-ups for book variants go in `VARIANTS` in `src/js/20-product.js`: a list of books (`pose: 'stand' | 'lie'`, `yaw`, `x`, `y`, `z`, `open` = cover opening in degrees) and the camera height `elev` (90 = straight down).
 
 Then add the id to `TPL_ORDER` and a line to `DESIGN_META` (category + one-line description). Categories: `shop`, `promo`, `trust`, `series`, `scene`, `own` (add new ones to `CATEGORIES`).
 

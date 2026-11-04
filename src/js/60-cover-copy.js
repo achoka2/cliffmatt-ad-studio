@@ -131,11 +131,12 @@ async function downloadVideo() {
   const bgC = mk(sz.w, sz.h); drawBackground(ctx2(bgC), L, D);
   const spec = mockSpec(S.cover, S.info, S.mock, S.title, S.author, S.coverId);
   const frameCv = mk(GL.SIZE, GL.SIZE), base = rotOf(S.mock), is3d = GL.ok;
-  const T0 = TPL[S.template], floating = ((T0.styles(D, themeFor(D, T0), L) || {}).book || {}).floor === false;
+  const T0 = TPL[S.template], bookSt = (T0.styles(D, themeFor(D, T0), L) || {}).book || {}, floating = bookSt.floor === false;
+  const turning = !bookSt.variant || bookSt.variant === 'main'; // scene designs use a fixed camera, so only the main book turns
   const c = mk(sz.w, sz.h), x = ctx2(c);
   const draw = t => {
     let fr = null;
-    if (is3d) {
+    if (is3d && turning) {
       const e = easeOut(clamp(t / 1.4, 0, 1)), sway = t > 2.6 ? Math.sin((t - 2.6) * 1.5) * 5 : 0;
       fr = renderProduct(spec, { pose: base.pose, turn: base.turn + (1 - e) * -55 + sway, tilt: base.tilt, spin: base.spin, gloss: base.gloss, shadow: !floating }, frameCv);
     }

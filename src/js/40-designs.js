@@ -436,9 +436,9 @@ Object.assign(TPL, {
   }
 });
 
-const TPL_ORDER = ['shop', 'classic', 'promo', 'glow', 'offer', 'quote', 'steps', 'collection', 'spotlight', 'topview', 'desk', 'flatlay', 'stack', 'banner', 'instant', 'custom'];
+const TPL_ORDER = ['shop', 'classic', 'promo', 'glow', 'offer', 'wave', 'frame', 'quote', 'steps', 'collection', 'fan', 'spotlight', 'topview', 'duo', 'openbook', 'bigbanner', 'desk', 'flatlay', 'stack', 'banner', 'instant', 'custom'];
 const CAROUSEL = ['promo', 'glow', 'offer', 'spotlight', 'topview', 'desk', 'stack', 'banner', 'instant', 'steps'];
-const ORDER = ['chat', 'book', 'device', 'price', 'logo', 'offer', 'headline', 'sub', 'deal', 'quote', 'steps', 'cta', 'site', 'tag'];
+const ORDER = ['chat', 'book2', 'book', 'device', 'price', 'logo', 'offer', 'kicker', 'headline', 'sub', 'deal', 'quote', 'steps', 'cta', 'site', 'tag'];
 
 function overrideBg(ctx, L, D) {
   const { W, H } = L;
@@ -492,9 +492,10 @@ function autoText(key, title = S.title, author = S.author) {
   if (key === 'tag') return b.tag;
   if (key === 'price') return b.price;
   if (key === 'offer') return 'Special offer';
+  if (key === 'kicker') return 'Instant PDF e-book';
   return '';
 }
-function currentText() { const t = {}; for (const k of ['headline', 'sub', 'cta', 'tag', 'price', 'offer']) t[k] = S.auto[k] ? autoText(k) : S.text[k]; for (const k of ['oldPrice', 'quote', 'quoteBy']) t[k] = S.text[k]; return t; }
+function currentText() { const t = {}; for (const k of ['headline', 'sub', 'cta', 'tag', 'price', 'offer', 'kicker']) t[k] = S.auto[k] ? autoText(k) : S.text[k]; for (const k of ['oldPrice', 'quote', 'quoteBy']) t[k] = S.text[k]; return t; }
 function buildData(o = {}) {
   const b = brand();
   if (!('device' in o) && S.cover && S.show.device && TPL[o.template || S.template].usesDevice) buildDevice();
@@ -514,8 +515,10 @@ function buildData(o = {}) {
         { name, dark, bg(ctx, L, D), rects: { sq, pt, st, ls }, styles(D, th, L) }
         rects place elements as [x, y, w, h] fractions of the canvas for
         1:1 (sq), 4:5 (pt), 9:16 (st, keep 14% top / 20% bottom clear) and 1.91:1 (ls).
-        Elements: book (variant: main | top | lie | stack | pair | collection), device, chat,
-        logo, headline, sub, offer, deal, quote, steps, price, cta, site, tag.
+        Elements: book (variant: main | top | lie | stack | pair | collection | fan | duoTop |
+        topA | topB | tilt | ajar | open), book2 (a second book, same variants, not draggable),
+        device, chat, logo, kicker, headline, sub, offer, deal, quote, steps, price, cta, site, tag.
+        A rect may run past the edges (negative x/y or x+w > 1) to bleed a book off the canvas.
      2. Add its id to TPL_ORDER and a line to DESIGN_META below.
    ========================================================================= */
 const CATEGORIES = [
@@ -543,6 +546,12 @@ const DESIGN_META = {
   flatlay: ['scene', 'Top-down desk with coffee, leaves and a pen'],
   stack: ['scene', 'A standing book in front of a stack of copies'],
   banner: ['scene', 'Two books and a headline, magazine style'],
+  wave: ['promo', 'Two-tone wave, big white headline, cover opening'],
+  frame: ['promo', 'Outlined frame, tilted book, label, headline and button'],
+  fan: ['series', 'Books fanned out on a colourful geometric band'],
+  duo: ['scene', 'Two copies stacked, seen from above on grey'],
+  openbook: ['scene', 'The book standing open with its pages fanned'],
+  bigbanner: ['scene', 'Two big books running off the edges, bold circles'],
   custom: ['own', 'Your own background picture or colour']
 };
-TPL_ORDER.forEach(id => { const m = DESIGN_META[id] || ['own', '']; TPL[id].cat = m[0]; TPL[id].desc = m[1]; });
+

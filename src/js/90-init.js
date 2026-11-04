@@ -94,11 +94,11 @@ function init() {
   $('#curDesign').textContent = TPL[S.template].name;
 
   // step 4: words, show, background, position
-  ['headline', 'sub', 'cta', 'tag', 'offer'].forEach(k => $('#' + k).addEventListener('input', e => { S.text[k] = e.target.value; S.auto[k] = !e.target.value; invalidate(); }));
+  ['headline', 'sub', 'cta', 'tag', 'offer', 'kicker'].forEach(k => $('#' + k).addEventListener('input', e => { S.text[k] = e.target.value; S.auto[k] = !e.target.value; invalidate(); }));
   ['oldPrice', 'quote', 'quoteBy'].forEach(k => $('#' + k).addEventListener('input', e => { S.text[k] = e.target.value; renderCopy(); invalidate(); }));
   $('#stars').checked = !!S.show.stars; $('#stars').addEventListener('change', e => { S.show.stars = e.target.checked; persist(); invalidate(); });
   $$('[data-show]').forEach(cb => { cb.checked = !!S.show[cb.dataset.show]; cb.addEventListener('change', () => { S.show[cb.dataset.show] = cb.checked; persist(); invalidate(); }); });
-  $('#resetWords').addEventListener('click', () => { for (const k of ['headline', 'sub', 'cta', 'tag', 'price', 'offer']) { S.auto[k] = true; S.text[k] = ''; } ['oldPrice', 'quote', 'quoteBy'].forEach(k => { S.text[k] = ''; $('#' + k).value = ''; }); S.aiCopy = null; syncAutoFields(); $('#price').value = ''; renderCopy(); invalidate(); });
+  $('#resetWords').addEventListener('click', () => { for (const k of ['headline', 'sub', 'cta', 'tag', 'price', 'offer', 'kicker']) { S.auto[k] = true; S.text[k] = ''; } ['oldPrice', 'quote', 'quoteBy'].forEach(k => { S.text[k] = ''; $('#' + k).value = ''; }); S.aiCopy = null; syncAutoFields(); $('#price').value = ''; renderCopy(); invalidate(); });
   $$('#sizeSeg button').forEach(b => b.addEventListener('click', () => { S.size = b.dataset.s; persist(); invalidate(); }));
   $('#safeTg').checked = S.safe; $('#safeTg').addEventListener('change', e => { S.safe = e.target.checked; persist(); invalidate(); });
   $$('#bgSeg button').forEach(b => b.addEventListener('click', () => setBgMode(b.dataset.v)));
