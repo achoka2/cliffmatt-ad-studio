@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Cliffmatt Ad Studio</title>
+<meta name="description" content="Book cover in, realistic 3D mockup and branded Facebook ads in every size out.">
+<meta name="theme-color" content="#0F2A49">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon-64.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ad Studio">
+<link rel="stylesheet" href="css/fonts.css?v=05a67fc2dc">
+<link rel="stylesheet" href="css/app.css?v=05a67fc2dc">
+<style>:root{color-scheme:light}[hidden]{display:none!important}img{max-width:100%}</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <a class="mark" href="#" id="homeLink"><i aria-hidden="true"></i><span>Cliffmatt Ad Studio</span></a>
+    <nav class="modes" aria-label="Sections">
+      <button class="mode" type="button" data-mode="make" aria-current="page">Make an ad</button>
+      <button class="mode" type="button" data-mode="batch" aria-current="false">Batch</button>
+      <button class="mode" type="button" data-mode="resize" aria-current="false">Resize an ad</button>
+    </nav>
+    <div class="top-right">
+      <label for="brandSel" class="sr">Brand</label>
+      <select id="brandSel"></select>
+      <button class="btn on-dark" id="installBtn" type="button" hidden>Install app</button>
+      <button class="btn on-dark" id="kitBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>Settings</span></button>
+    </div>
+  </div>
+  <div class="update" id="updateBar" hidden>A new version of Ad Studio is ready. <button class="linkbtn" id="updateBtn" type="button">Reload</button></div>
+</header>
+
+<main>
+<!-- ======================= MAKE AN AD ======================= -->
+<section id="mode-make" class="mode-view">
+  <nav class="stepper" aria-label="Steps">
+    <div class="stepper-in">
+      <ol>
+        <li><button class="st" type="button" data-step="1"><span class="n">1</span><span class="l">Book</span></button></li>
+        <li><button class="st" type="button" data-step="2"><span class="n">2</span><span class="l">3D mockup</span></button></li>
+        <li><button class="st" type="button" data-step="3"><span class="n">3</span><span class="l">Design</span></button></li>
+        <li><button class="st" type="button" data-step="4"><span class="n">4</span><span class="l">Customise</span></button></li>
+        <li><button class="st" type="button" data-step="5"><span class="n">5</span><span class="l">Download</span></button></li>
+      </ol>
+      <button class="btn primary sm" id="quickDl" type="button" title="Download every size of the current design">Download all sizes</button>
+    </div>
+  </nav>
+
+  <!-- STEP 1 · BOOK -->
+  <section class="step" data-step="1">
+    <div class="step-head">
+      <h1>Add the book</h1>
+      <p>On Google Images, right-click a cover and choose <i>Copy image</i>, then press <kbd>⌘</kbd> <kbd>V</kbd> (or <kbd>Ctrl</kbd> <kbd>V</kbd>) anywhere on this page. You can also drop a file or browse.</p>
+    </div>
+    <div class="s1">
+      <div id="drop" class="drop" tabindex="0" role="button" aria-label="Add a book cover">
+        <canvas id="coverThumb" width="560" height="760"></canvas>
+        <div class="drop-empty" id="dropEmpty" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 3h10l4 4v14H5z"/><path d="M12 10v7m0-7l-3 3m3-3l3 3"/></svg>
+          <b>Paste, drop or browse a cover</b>
+          <span>JPG, PNG or WebP</span>
+        </div>
+        <span class="flag" id="sampleFlag">Sample cover · paste yours</span>
+        <input type="file" id="coverFile" accept="image/*" hidden>
+      </div>
+      <div class="s1-side">
+        <div class="card fields">
+          <label class="f">Book title<input id="title" type="text" autocomplete="off"></label>
+          <div class="two">
+            <label class="f">Author<input id="author" type="text" autocomplete="off"></label>
+            <label class="f">Price<input id="price" type="text" autocomplete="off"></label>
+          </div>
+          <div class="row-between">
+            <a id="gLink" class="linkbtn" target="_blank" rel="noopener" href="https://www.google.com/search?tbm=isch&q=book+cover">Find this cover on Google Images ↗</a>
+            <label class="tg"><input type="checkbox" id="trim" checked>Trim white edges</label>
+          </div>
+          <button id="aiRead" class="btn ai" type="button" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2 2.2.8-2.2.8L19 21l-.8-2.2-2.2-.8 2.2-.8z"/></svg>
+            <span>Read the cover &amp; write the words with Claude</span></button>
+          <p class="hint" id="aiHint">Want Claude to read covers and write your ad words here? <button class="linkbtn" id="aiHintBtn" type="button">Add a Claude key in Settings</button></p>
+          <p class="hint ai-status" id="aiStatus" hidden></p>
+        </div>
+        <div class="card extra">
+          <div class="extra-head"><span><b>More covers</b> for a series</span><button class="linkbtn" id="extraClear" type="button">Clear</button></div>
+          <div class="extra-row" id="extraRow"><button class="add" id="extraAdd" type="button" aria-label="Add more covers">+</button></div>
+          <p class="hint" id="extraHint"></p>
+          <input type="file" id="extraFile" accept="image/*" multiple hidden>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 2 · 3D MOCKUP -->
+  <section class="step" data-step="2" hidden>
+    <div class="step-head">
+      <h1>Shape the 3D book</h1>
+      <p>Choose the book type and angle. This book is used in every design, with a real shadow.</p>
+    </div>
+    <div class="s2">
+      <div class="card stage">
+        <div class="checker"><canvas id="mockStage" width="900" height="900" aria-label="3D book preview"></canvas></div>
+        <div class="stage-foot"><button class="btn" id="dlMock" type="button">Download see-through PNG</button><span class="hint">Use it in Canva or on any photo.</span></div>
+      </div>
+      <div class="s2-side">
+        <div class="card">
+          <h3>Book type</h3>
+          <div class="types" id="prodSeg" role="group" aria-label="Book type">
+            <button type="button" data-v="hardcover" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 3h11l2 1v16l-2 1H6z"/><path d="M17 3v18"/></svg>Hardcover</button>
+            <button type="button" data-v="paperback" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4h11v17H6z"/><path d="M17 4l1.5 1v16l-1.5 0"/></svg>Paperback</button>
+            <button type="button" data-v="flat" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="6" y="3" width="12" height="18" rx="1"/></svg>Flat</button>
+            <button type="button" data-v="phone" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 4.5h2"/></svg>Phone</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Angle</h3>
+          <div class="angles" id="angleChips" role="group" aria-label="Angle">
+            <button type="button" data-a="right" aria-pressed="true"><canvas data-a="right" width="200" height="200"></canvas><span>Standing</span></button>
+            <button type="button" data-a="front" aria-pressed="false"><canvas data-a="front" width="200" height="200"></canvas><span>Front</span></button>
+            <button type="button" data-a="spine" aria-pressed="false"><canvas data-a="spine" width="200" height="200"></canvas><span>Show spine</span></button>
+            <button type="button" data-a="hero" aria-pressed="false"><canvas data-a="hero" width="200" height="200"></canvas><span>Dramatic</span></button>
+            <button type="button" data-a="lying" aria-pressed="false"><canvas data-a="lying" width="200" height="200"></canvas><span>Lying flat</span></button>
+            <button type="button" data-a="above" aria-pressed="false"><canvas data-a="above" width="200" height="200"></canvas><span>From above</span></button>
+          </div>
+        </div>
+        <details class="card acc">
+          <summary>Fine-tune</summary>
+          <div class="acc-body">
+            <div class="slider"><label for="turn">Turn</label><input id="turn" type="range" min="-60" max="60" step="1"><output id="turnO"></output></div>
+            <div class="slider"><label for="tilt">Camera height</label><input id="tilt" type="range" min="-10" max="90" step="1"><output id="tiltO"></output></div>
+            <div class="slider"><label for="spin">Rotate</label><input id="spin" type="range" min="-30" max="30" step="1"><output id="spinO"></output></div>
+            <div class="slider"><label for="thick">Thickness</label><input id="thick" type="range" min="2" max="26" step="1"><output id="thickO"></output></div>
+            <div class="slider"><label for="gloss">Shine</label><input id="gloss" type="range" min="0" max="100" step="1"><output id="glossO"></output></div>
+            <div class="colorrow"><label class="tg"><input type="checkbox" id="spineAuto" checked>Spine colour from cover</label><input type="color" id="spineColor" value="#222222" aria-label="Spine colour"></div>
+          </div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 3 · DESIGN -->
+  <section class="step" data-step="3" hidden>
+    <div class="step-head">
+      <h1>Pick a design</h1>
+      <p>Every design comes out in all four Facebook sizes. Selected: <b id="curDesign"></b>. Double-click a design to go straight to customising.</p>
+    </div>
+    <div class="filters" id="catChips" role="group" aria-label="Design categories"></div>
+    <div class="gallery" id="gallery" role="group" aria-label="Designs"></div>
+  </section>
+
+  <!-- STEP 4 · CUSTOMISE -->
+  <section class="step" data-step="4" hidden>
+    <div class="s4">
+      <div class="card s4-prev">
+        <div class="prev-top">
+          <div class="seg" id="sizeSeg" role="group" aria-label="Preview size">
+            <button type="button" data-s="square" aria-pressed="false">1:1</button>
+            <button type="button" data-s="portrait" aria-pressed="false">4:5</button>
+            <button type="button" data-s="story" aria-pressed="false">9:16</button>
+            <button type="button" data-s="landscape" aria-pressed="false">1.91:1</button>
+          </div>
+          <label class="tg"><input type="checkbox" id="safeTg" checked>Safe zones</label>
+        </div>
+        <div class="canvas-box">
+          <div class="frame">
+            <canvas id="preview" width="1080" height="1080" aria-label="Ad preview"></canvas>
+            <div class="safe t" id="safeT" hidden>Keep clear · profile &amp; name</div>
+            <div class="safe b" id="safeB" hidden>Keep clear · buttons</div>
+            <div class="safe r" id="safeR" hidden>Reels captions can cover this</div>
+          </div>
+        </div>
+        <div class="row-between"><div class="meta" id="meta"></div><span class="hint">Drag the book to move it.</span></div>
+      </div>
+      <div class="s4-side">
+        <details class="card acc" open>
+          <summary>Words</summary>
+          <div class="acc-body">
+            <label class="f">Headline<input id="headline" type="text"></label>
+            <label class="f">Second line<input id="sub" type="text"></label>
+            <div class="two">
+              <label class="f">Button<input id="cta" type="text"></label>
+              <label class="f">Corner tag<input id="tag" type="text"></label>
+            </div>
+            <div class="two">
+              <label class="f">Offer label<input id="offer" type="text"></label>
+              <label class="f">Was price<input id="oldPrice" type="text" placeholder="e.g. Ksh 300"></label>
+            </div>
+            <label class="f">Quote <span class="hint">a real reader review, or a line from the book</span><textarea id="quote" rows="3"></textarea></label>
+            <div class="two">
+              <label class="f">Quote by<input id="quoteBy" type="text" placeholder="Reader's name"></label>
+              <label class="tg end"><input type="checkbox" id="stars">5 stars (real review only)</label>
+            </div>
+            <button class="linkbtn" id="resetWords" type="button">Reset words to automatic</button>
+          </div>
+        </details>
+        <details class="card acc">
+          <summary>Show on the ad</summary>
+          <div class="acc-body">
+            <div class="toggles">
+              <label class="tg"><input type="checkbox" data-show="headline" checked>Headline</label>
+              <label class="tg"><input type="checkbox" data-show="sub" checked>Second line</label>
+              <label class="tg"><input type="checkbox" data-show="cta" checked>Button</label>
+              <label class="tg"><input type="checkbox" data-show="tag" checked>Corner tag</label>
+              <label class="tg"><input type="checkbox" data-show="logo" checked>Logo</label>
+              <label class="tg"><input type="checkbox" data-show="price" checked>Price</label>
+              <label class="tg"><input type="checkbox" data-show="site" checked>Website</label>
+              <label class="tg"><input type="checkbox" data-show="device" checked>Phone</label>
+            </div>
+            <p class="hint">Each design uses the pieces that suit it.</p>
+          </div>
+        </details>
+        <details class="card acc">
+          <summary>Background</summary>
+          <div class="acc-body">
+            <div class="seg" id="bgSeg" role="group" aria-label="Background">
+              <button type="button" data-v="template" aria-pressed="true">Design's own</button>
+              <button type="button" data-v="color" aria-pressed="false">Colour</button>
+              <button type="button" data-v="image" aria-pressed="false">My image</button>
+            </div>
+            <div class="colorrow" id="bgColorRow" hidden><input type="color" id="bgColor" value="#0F2A49" aria-label="Background colour"><input type="color" id="bgColor2" value="#2a4f7f" aria-label="Second colour"><label class="tg"><input type="checkbox" id="bgGrad" checked>Gradient</label></div>
+            <div id="bgImgRow" hidden>
+              <p class="hint">Upload any design you like: a background, a texture or a layout you want to borrow. It stays in this browser.</p>
+              <div class="lib" id="bgLib"><button class="add" id="bgAdd" type="button" aria-label="Add background image">+</button></div>
+              <input type="file" id="bgFile" accept="image/*" multiple hidden>
+              <div class="slider"><label for="bgDim">Darken</label><input id="bgDim" type="range" min="0" max="80" step="1" value="0"><output id="bgDimO"></output></div>
+            </div>
+          </div>
+        </details>
+        <details class="card acc">
+          <summary>Book position</summary>
+          <div class="acc-body">
+            <div class="slider"><label for="pScale">Size</label><input id="pScale" type="range" min="60" max="140" step="1" value="100"><output id="pScaleO"></output></div>
+            <div class="slider"><label for="pX">Left / right</label><input id="pX" type="range" min="-30" max="30" step="1" value="0"><output id="pXO"></output></div>
+            <div class="slider"><label for="pY">Up / down</label><input id="pY" type="range" min="-30" max="30" step="1" value="0"><output id="pYO"></output></div>
+            <button class="linkbtn" id="posReset" type="button">Reset position</button>
+          </div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 5 · DOWNLOAD -->
+  <section class="step" data-step="5" hidden>
+    <div class="step-head">
+      <h1>Download</h1>
+      <p>Your <b id="dlDesign"></b> design in every Facebook size, ready for Ads Manager.</p>
+    </div>
+    <div class="card dl">
+      <div class="dl-main">
+        <button class="btn primary big" id="dlAll" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 21h16"/></svg>Download all sizes (ZIP)</button>
+        <div class="fmt" role="radiogroup" aria-label="Image format">
+          <label><input type="radio" name="fmt" value="png" checked>PNG</label>
+          <label><input type="radio" name="fmt" value="jpg">JPG</label>
+        </div>
+      </div>
+      <div class="dl-more">
+        <div class="dl-item"><b>Video ad</b><span>6 seconds, MP4</span><div class="colorrow"><select id="vidSize" aria-label="Video size"><option value="square">1:1</option><option value="portrait">4:5</option><option value="story">9:16</option><option value="landscape">1.91:1</option></select><button class="btn" id="dlVideo" type="button">Make video</button></div></div>
+        <div class="dl-item"><b>Carousel set</b><span>10 cards, 1080 × 1080</span><button class="btn" id="dlCarousel" type="button">Download cards</button></div>
+      </div>
+    </div>
+    <div class="sizes" id="sizes"></div>
+    <section class="card copy" aria-labelledby="copyH">
+      <div class="copy-head"><h2 id="copyH">Ad copy for Ads Manager</h2><span class="hint">Copy a block and paste it into Ads Manager.</span></div>
+      <div class="fbfields" id="fbFields"></div>
+      <div class="copy-grid" id="copyGrid"></div>
+    </section>
+  </section>
+
+  <div class="actionbar">
+    <div class="ab-in">
+      <button class="btn" id="backBtn" type="button">Back</button>
+      <span class="ab-hint" id="abHint"></span>
+      <button class="btn primary" id="nextBtn" type="button">Next</button>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= BATCH ======================= -->
+<section id="mode-batch" class="mode-view split" hidden>
+  <div class="side">
+    <div class="step-head"><h1>Batch</h1><p>Many covers in, one ZIP out, with every size for every book.</p></div>
+    <div class="card">
+      <h3>1 · Add covers</h3>
+      <div class="bigdrop" id="bDrop" tabindex="0" role="button"><b>Drop covers here</b><span>or click to choose several at once. Pasting works too.</span></div>
+      <input type="file" id="bFile" accept="image/*" multiple hidden>
+      <p class="hint">Titles are guessed from file names. Fix any that look wrong before you start.</p>
+      <button id="bAi" class="btn ai" type="button" hidden><span>Read every title with Claude</span></button>
+    </div>
+    <div class="card">
+      <h3>2 · What to make</h3>
+      <label class="f">Design<select id="bTpl"></select></label>
+      <p class="hint">Uses your current 3D book, words and brand from <b>Make an ad</b>.</p>
+      <div class="toggles" id="bSizes"></div>
+      <label class="tg"><input type="checkbox" id="bMock" checked>Also include the see-through 3D book</label>
+      <button class="btn primary big" id="bGo" type="button" disabled>Make ads for 0 books</button>
+      <button class="btn" id="bCollection" type="button">Use these covers for one Collection ad</button>
+      <div class="progress" aria-hidden="true"><i id="bBar"></i></div>
+      <p class="hint" id="bStatus"></p>
+    </div>
+  </div>
+  <div>
+    <div class="blist" id="bList"></div>
+    <div class="empty" id="bEmpty"><b>No covers yet</b>Add 5, 20 or 50 covers and get every Facebook size for each one in a single ZIP. Use the Shop image design to refresh your website product photos too.</div>
+  </div>
+</section>
+
+<!-- ======================= RESIZE ======================= -->
+<section id="mode-resize" class="mode-view split" hidden>
+  <div class="side">
+    <div class="step-head"><h1>Resize an ad</h1><p>Turn one finished design into every Facebook size without cutting off the words.</p></div>
+    <div class="card">
+      <h3>1 · Finished ad</h3>
+      <div class="bigdrop" id="rDrop" tabindex="0" role="button"><b>Drop a finished ad</b><span>for example a square design from Gemini or Canva. Pasting works too.</span></div>
+      <input type="file" id="rFile" accept="image/*" hidden>
+    </div>
+    <div class="card">
+      <h3>2 · Fill the extra space</h3>
+      <div class="seg" id="rSeg" role="group" aria-label="Fill">
+        <button type="button" data-v="blur" aria-pressed="true">Blurred</button>
+        <button type="button" data-v="edge" aria-pressed="false">Edge colour</button>
+        <button type="button" data-v="crop" aria-pressed="false">Crop</button>
+      </div>
+      <button class="btn primary big" id="rGo" type="button" disabled>Download all sizes (ZIP)</button>
+    </div>
+  </div>
+  <div>
+    <div class="rgrid" id="rGrid"></div>
+    <div class="empty" id="rEmpty"><b>Nothing to resize yet</b>Drop a finished ad and get 1:1, 4:5, 9:16 and 1.91:1 versions.</div>
+  </div>
+</section>
+</main>
+
+<dialog id="kitDlg" aria-labelledby="kitH">
+  <form method="dialog" id="kitForm">
+    <div class="dlg-h"><h2 id="kitH">Settings</h2><button class="btn" value="cancel" type="submit">Done</button></div>
+    <div class="dlg-b">
+      <h3>Brand</h3>
+      <label class="f">Brand name<input id="kName" type="text"></label>
+      <div class="logo-row">
+        <canvas id="kLogo" width="168" height="168"></canvas>
+        <div class="col">
+          <div class="colorrow"><button class="btn" type="button" id="kLogoBtn">Upload logo</button><button class="btn" type="button" id="kLogoClear">Use text badge</button></div>
+          <p class="hint">A transparent PNG looks best. Without one, a badge is drawn from the brand name.</p>
+          <input type="file" id="kLogoFile" accept="image/*" hidden>
+        </div>
+      </div>
+      <label class="f">Website<input id="kSite" type="text" placeholder="yourshop.co.ke"></label>
+      <div class="three">
+        <label class="f">Main colour<input type="color" id="kPrimary"></label>
+        <label class="f">Dark colour<input type="color" id="kDark"></label>
+        <label class="f">Website pill<input type="color" id="kSiteColor"></label>
+      </div>
+      <div class="three">
+        <label class="f">Tag colour<input type="color" id="kTagColor"></label>
+        <label class="f">Default price<input id="kPrice" type="text"></label>
+        <label class="f">Default tag<input id="kTag" type="text"></label>
+      </div>
+      <label class="f">Default button<input id="kCta" type="text"></label>
+      <h3>Ordering</h3>
+      <label class="f">How buyers receive the book<input id="kDelivery" type="text"></label>
+      <label class="f">How buyers pay<input id="kPayment" type="text"></label>
+      <label class="f">Order steps (one per line, for the How to order design)<textarea id="kSteps" rows="3"></textarea><span class="hint">You can use {site}, {price} and {payment}.</span></label>
+      <div class="colorrow"><button class="btn" type="button" id="kNew">Add another brand</button><button class="btn" type="button" id="kDel">Delete this brand</button></div>
+      <div id="aiSettings">
+        <h3>Claude (optional)</h3>
+        <p class="hint">Paste an Anthropic API key to let Claude read covers and write ad words in this web app. The key is saved only in this browser and is never included in backups. Usage is billed to your Anthropic account.</p>
+        <div class="two">
+          <label class="f">API key<input id="aiKey" type="password" autocomplete="off" placeholder="sk-ant-…"></label>
+          <label class="f">Model<select id="aiModel"><option value="claude-sonnet-5-5">Claude Sonnet 5.5 (best words)</option><option value="claude-haiku-5-5">Claude Haiku 5.5 (fastest)</option><option value="claude-opus-5-5">Claude Opus 5.5</option></select></label>
+        </div>
+        <div class="colorrow"><button class="btn" type="button" id="aiTest">Test key</button><span class="hint" id="aiTestStatus"></span></div>
+      </div>
+      <h3>Backup</h3>
+      <p class="hint">Your brands, logos and backgrounds are saved in this browser. Back up to a file to move them to another phone or computer.</p>
+      <div class="colorrow"><button class="btn" type="button" id="kExport">Back up brands</button><button class="btn" type="button" id="kImport">Restore</button><input type="file" id="kImportFile" accept=".json,application/json" hidden></div>
+      <p class="hint web-only">Install on a phone: in Chrome tap ⋮ → <i>Install app</i>; on iPhone Safari tap Share → <i>Add to Home Screen</i>.</p>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite"></div>
+<canvas id="rec" width="10" height="10" aria-hidden="true"></canvas>
+
+<script src="vendor/three.min.js?v=05a67fc2dc"></script>
+<script src="vendor/jszip.min.js?v=05a67fc2dc"></script>
+<script src="vendor/mp4-muxer.min.js?v=05a67fc2dc"></script>
+<script src="js/app.js?v=05a67fc2dc"></script>
+</body>
+</html>
