@@ -23,4 +23,9 @@ Brands, logos and uploaded backgrounds are saved in the browser you use; use **S
 - `vendor/`, `fonts/`, `icons/` – libraries (three.js r149, JSZip, mp4-muxer), fonts and app icons.
 - `build.py` – builds the site at the repo root (`index.html`, `css/`, `js/app.js`, `sw.js`, `manifest.webmanifest`) and `dist/ad-studio-single-file.html` (one self-contained file).
 
-Run `python3 build.py` after editing anything in `src/`, then commit. GitHub Pages serves the repo root.
+Run `python3 build.py` after editing anything in `src/`, commit, then publish:
+
+```
+git push origin main
+git push origin main:gh-pages   # GitHub Pages serves the gh-pages branch
+```
